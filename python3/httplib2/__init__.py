@@ -827,18 +827,19 @@ class HTTPSConnectionWithTimeout(http.client.HTTPSConnection):
                  timeout=None, proxy_info=None,
                  ca_certs=None, disable_ssl_certificate_validation=False):
         self.proxy_info = proxy_info
-        context = None
         if ca_certs is None:
             ca_certs = CA_CERTS
-        if (cert_file or ca_certs) and not disable_ssl_certificate_validation:
-            if not hasattr(ssl, 'SSLContext'):
-                raise CertificateValidationUnsupportedInPython31()
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        if not hasattr(ssl, 'SSLContext'):
+            raise CertificateValidationUnsupportedInPython31()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        if disable_ssl_certificate_validation:
+            context.verify_mode = ssl.CERT_OPTIONAL
+        else:
             context.verify_mode = ssl.CERT_REQUIRED
-            if cert_file:
-                context.load_cert_chain(cert_file, key_file)
-            if ca_certs:
-                context.load_verify_locations(ca_certs)
+        if cert_file:
+            context.load_cert_chain(cert_file, key_file)
+        if ca_certs:
+            context.load_verify_locations(ca_certs)
         http.client.HTTPSConnection.__init__(
                 self, host, port=port, key_file=key_file,
                 cert_file=cert_file, timeout=timeout, context=context,
